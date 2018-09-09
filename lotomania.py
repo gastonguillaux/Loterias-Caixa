@@ -6,8 +6,109 @@ Created on Wed Aug 29 22:32:55 2018
 """
 
 def ultimo_sorteio(loteria: str):
-    return create_database(loteria).tail(1)
+    if loteria == 'lotomania':
+        bolas = '20'
+    elif loteria == 'lotofacil':
+        bolas = '15'
+    
+    return create_database(loteria).tail(1).loc[:, 'Bola1':'Bola'+bolas]
 
+'''
+==========================================================================================
+'''
+
+def todos_sorteios(loteria: str):
+    if loteria == 'lotomania':
+        bolas = '20'
+    elif loteria == 'lotofacil':
+        bolas = '15'
+    
+    return create_database(loteria).loc[:, 'Bola1':'Bola' + bolas]
+
+'''
+==========================================================================================
+'''
+
+def valida_apostas_lotofacil_ultimo():
+    df_apostas = importa_apostas()
+    ult_sorteio = [int(i) for i in ultimo_sorteio('lotofacil').values.tolist()[0]]
+    #ult_sorteio = [int(i) for i in ['01','02','03','04','06','07','08','09','10','12','13','14','17','18','22']]
+
+    apostas = {}
+    #CRIA DICIONARIO ESTRUTURADO PARA AS APOSTAS
+    for index, row in df_apostas.iterrows():
+        apostas[index] = {}
+        apostas[index]['numeros'] = [int(j) for j in row.values.tolist()]
+        apostas[index]['acertos'] = 0
+    
+    #VALIDA CADA APOSTA CONTRA O RESULTADO DO ULTIMO SORTEIO    
+    for aposta in apostas:
+        for numero in apostas[aposta]['numeros']:
+            if int(numero) in ult_sorteio:
+                apostas[aposta]['acertos'] += 1
+    
+    #IMPRIME O SCORE
+    print('### ACERTOS DE CADA APOSTA ###')
+    for aposta in apostas:
+        print(aposta + ' = ' + str(apostas[aposta]['acertos']))
+    return apostas
+
+'''
+==========================================================================================
+'''   
+
+def valida_apostas_lotofacil(ultimos_jogos=1, score=11):
+    df_apostas = importa_apostas()
+    sorteios = {} 
+    ult_n_sorteios = create_database('lotofacil').tail(ultimos_jogos).loc[:, 'Bola1':'Bola15']
+    apostas = {}
+        
+    for index, row in ult_n_sorteios.iterrows():
+        sorteios[index] = [int(j) for j in row.values.tolist()]
+    
+    for index, row in df_apostas.iterrows():
+        apostas[index] = {}
+        apostas[index]['numeros'] = [int(j) for j in row.values.tolist()]
+        apostas[index]['acertos'] = 0
+        apostas[index]['sucesso'] = {11:0, 12:0, 13:0, 14:0, 15:0}
+    
+    for sorteio in sorteios:
+        s = sorteios[sorteio]
+        for aposta in apostas:
+            for numero in apostas[aposta]['numeros']:
+                if numero in s:
+                    apostas[aposta]['acertos'] += 1
+
+        '''
+        #MOSTRA EM QUAIS CONCURSOS TERIAMOS >= 11 ACERTOS            
+        for aposta in apostas:
+            if apostas[aposta]['acertos'] >= score:
+                print('### ACERTOS DO SORTEIO ' + sorteio + ' ###')    
+                print(aposta + ' = ' + str(apostas[aposta]['acertos']))
+                print('*' * 30)
+            apostas[aposta]['acertos'] = 0     
+        '''
+        for aposta in apostas:
+            if apostas[aposta]['acertos'] >= 11:
+                apostas[aposta]['sucesso'][apostas[aposta]['acertos']] += 1
+            apostas[aposta]['acertos'] = 0
+    
+    return apostas
+ 
+
+'''
+==========================================================================================
+'''    
+
+def importa_apostas():
+    import pandas as pd
+    p = r'c:\temp\apostas.csv'
+    apostas = pd.read_csv(p, index_col=0)
+    return apostas
+
+'''
+==========================================================================================
+'''
 
 def create_database(loteria):
     import pandas as pd
@@ -22,21 +123,17 @@ def create_database(loteria):
         #LOTOMANIA
         url = 'http://www1.caixa.gov.br/loterias/_arquivos/loterias/D_lotoma.zip'
         download_and_unzip(path,url)
-        #download_lotomania_historic()
         dados_historicos = pd.read_html(os.path.join(path, file_lotomania))[0]
         #print(dados_historicos)
         clean_aux_dir()
-        #return dados_historicos
         
     elif loteria == 'lotofacil':
         #LOTOFACIL
         url = 'http://www1.caixa.gov.br/loterias/_arquivos/loterias/D_lotfac.zip'
         download_and_unzip(path,url)
-        #download_lotofacil_historic()
         dados_historicos = pd.read_html(os.path.join(path, file_lotofacil))[0]
         #print(dados_historicos)
         clean_aux_dir()
-        #return dados_historicos
     
     #NOMEIA AS COLUNAS COM OS DADOS DA PRIMEIRA LINHA
     dados_historicos.columns =  dados_historicos.loc[0]
