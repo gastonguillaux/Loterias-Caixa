@@ -58,7 +58,14 @@ def valida_apostas_lotofacil_ultimo():
 '''   
 
 def valida_apostas_lotofacil(ultimos_jogos=1, score=11):
-    df_apostas = importa_apostas()
+    #IMPORTA DE ARQUIVO FISICO
+    #df_apostas = importa_apostas()
+    #arquivo_fisico = True
+    
+    #SIMULA COM APOSTAS RANDOMICAS
+    df_apostas = gera_apostas('lotofacil', 15000)
+    arquivo_fisico = False
+    
     sorteios = {} 
     ult_n_sorteios = create_database('lotofacil').tail(ultimos_jogos).loc[:, 'Bola1':'Bola15']
     apostas = {}
@@ -66,12 +73,18 @@ def valida_apostas_lotofacil(ultimos_jogos=1, score=11):
     for index, row in ult_n_sorteios.iterrows():
         sorteios[index] = [int(j) for j in row.values.tolist()]
     
-    for index, row in df_apostas.iterrows():
-        apostas[index] = {}
-        apostas[index]['numeros'] = [int(j) for j in row.values.tolist()]
-        apostas[index]['acertos'] = 0
-        apostas[index]['sucesso'] = {11:0, 12:0, 13:0, 14:0, 15:0}
-    
+    if arquivo_fisico == True:
+        for index, row in df_apostas.iterrows():
+            apostas[index] = {}
+            apostas[index]['numeros'] = [int(j) for j in row.values.tolist()]
+            apostas[index]['acertos'] = 0
+            apostas[index]['sucesso'] = {11:0, 12:0, 13:0, 14:0, 15:0}
+    elif arquivo_fisico == False:
+        apostas = df_apostas
+        for index in df_apostas:
+            apostas[index]['acertos'] = 0
+            apostas[index]['sucesso'] = {11:0, 12:0, 13:0, 14:0, 15:0}
+        
     for sorteio in sorteios:
         s = sorteios[sorteio]
         for aposta in apostas:
@@ -187,6 +200,47 @@ def computa_numeros_sorteados(loteria):
     
     #RETORNA A SERIE
     return numeros
+
+'''
+==========================================================================================
+'''    
+def gera_apostas(loteria, n_apostas=1):
+    import statistics as s
+    import random as r
+    n = 1
+    
+    if loteria == 'lotomania':
+        universo = 100
+        dezenas = 50
+        var_min = 730
+        var_max = 860
+        std_min = 27
+        std_max = 30
+        ini = 0
+    elif loteria == 'lotofacil':
+        universo = 26
+        dezenas = 15
+        var_min = 48
+        var_max = 55
+        std_min = 7
+        std_max = 8
+        ini = 1
+    apostas = {}
+    
+    while len(apostas) < n_apostas:
+        aux = r.sample(range(ini,universo), k=dezenas)
+        aux.sort()
+        if s.variance(aux) >= var_min and s.variance(aux) <= var_max:
+            if s.stdev(aux) >= std_min and s.stdev(aux) <= std_max:
+                apostas['Aposta' + str(n)] = {}
+                apostas['Aposta' + str(n)]['numeros'] = aux
+                n += 1
+    return apostas
+    
+    
+    
+
+
 
 '''
 ==========================================================================================
