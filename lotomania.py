@@ -108,6 +108,63 @@ def valida_apostas_lotofacil(ultimos_jogos=1, score=11):
     
     return apostas
  
+    
+
+'''
+==========================================================================================
+''' 
+
+def valida_apostas_lotomania(ultimos_jogos=1, score=15, jogos=10):
+    #IMPORTA DE ARQUIVO FISICO
+    #df_apostas = importa_apostas_lotomania()
+    #arquivo_fisico = True
+    
+    #SIMULA COM APOSTAS RANDOMICAS
+    df_apostas = gera_apostas('lotomania', jogos)
+    arquivo_fisico = False
+    
+    sorteios = {} 
+    ult_n_sorteios = create_database('lotomania').tail(ultimos_jogos).loc[:, 'Bola1':'Bola20']
+    apostas = {}
+        
+    for index, row in ult_n_sorteios.iterrows():
+        sorteios[index] = [int(j) for j in row.values.tolist()]
+    
+    if arquivo_fisico == True:
+        for index, row in df_apostas.iterrows():
+            apostas[index] = {}
+            apostas[index]['numeros'] = [int(j) for j in row.values.tolist()]
+            apostas[index]['acertos'] = 0
+            apostas[index]['sucesso'] = {15:0, 16:0, 17:0, 18:0, 19:0, 20:0, 0:0}
+    elif arquivo_fisico == False:
+        apostas = df_apostas
+        for index in df_apostas:
+            apostas[index]['acertos'] = 0
+            apostas[index]['sucesso'] = {15:0, 16:0, 17:0, 18:0, 19:0, 20:0, 0:0}
+    premios = 0    
+    for sorteio in sorteios:
+        s = sorteios[sorteio]
+        for aposta in apostas:
+            for numero in apostas[aposta]['numeros']:
+                if numero in s:
+                    apostas[aposta]['acertos'] += 1
+
+        for aposta in apostas:
+            sucesso = apostas[aposta]['acertos']
+            
+            print(aposta)
+            print(sorteio)
+            print(sucesso)
+            if sucesso >=15 : print('*' * 30)
+            print()
+            
+            if (sucesso >= 15) or (sucesso == 0):    
+                apostas[aposta]['sucesso'][sucesso] += 1
+                premios += 1
+            apostas[aposta]['acertos'] = 0
+    print('PREMIOS ==== ' + str(premios))
+    return apostas
+
 
 '''
 ==========================================================================================
@@ -116,6 +173,16 @@ def valida_apostas_lotofacil(ultimos_jogos=1, score=11):
 def importa_apostas():
     import pandas as pd
     p = r'c:\temp\apostas.csv'
+    apostas = pd.read_csv(p, index_col=0)
+    return apostas
+
+'''
+==========================================================================================
+'''    
+
+def importa_apostas_lotomania():
+    import pandas as pd
+    p = r'c:\temp\apostas_lotom.csv'
     apostas = pd.read_csv(p, index_col=0)
     return apostas
 
@@ -212,9 +279,9 @@ def gera_apostas(loteria, n_apostas=1):
     if loteria == 'lotomania':
         universo = 100
         dezenas = 50
-        var_min = 730
-        var_max = 860
-        std_min = 27
+        var_min = 750
+        var_max = 800
+        std_min = 26
         std_max = 30
         ini = 0
     elif loteria == 'lotofacil':
